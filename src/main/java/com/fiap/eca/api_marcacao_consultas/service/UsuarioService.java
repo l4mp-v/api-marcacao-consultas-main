@@ -96,11 +96,14 @@ public class UsuarioService {
 
         return usuario;
     }
+<<<<<<< HEAD
     public Usuario buscarPorEmail(String email) {
         return usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
     }
 }
+=======
+>>>>>>> 24cb379e8c3d1fbca2f83462bfbcddfd6639a94a
     /**
      * Altera a senha de um usuário específico (apenas admin)
      */
