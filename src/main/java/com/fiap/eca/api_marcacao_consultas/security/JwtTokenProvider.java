@@ -1,10 +1,8 @@
 package com.fiap.eca.api_marcacao_consultas.security;
 
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Date;
@@ -17,9 +15,10 @@ public class JwtTokenProvider {
     private long tempoExpiracao;
 
     public JwtTokenProvider(@Value("${jwt.secret}") String segredo) {
-        // Gerar uma chave segura em vez de usar a chave fornecida
-        // Isso garantirá que temos uma chave com comprimento suficiente
-        this.chaveSecreta = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+        // Usar a chave secreta configurada no application.properties
+        // Isso garante que a chave seja consistente entre reinicializações
+        byte[] keyBytes = segredo.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        this.chaveSecreta = Keys.hmacShaKeyFor(keyBytes);
     }
 
     // Gerar token JWT
@@ -38,7 +37,7 @@ public class JwtTokenProvider {
     // Extrair email do token
     public String obterEmailDoToken(String token) {
         return Jwts.parser()
-                .verifyWith((javax.crypto.SecretKey)chaveSecreta)
+                .verifyWith((javax.crypto.SecretKey) chaveSecreta)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
@@ -49,7 +48,7 @@ public class JwtTokenProvider {
     public boolean validarToken(String token) {
         try {
             Jwts.parser()
-                    .verifyWith((javax.crypto.SecretKey)chaveSecreta)
+                    .verifyWith((javax.crypto.SecretKey) chaveSecreta)
                     .build()
                     .parseSignedClaims(token);
             return true;

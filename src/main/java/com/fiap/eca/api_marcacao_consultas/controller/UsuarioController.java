@@ -7,7 +7,6 @@ import com.fiap.eca.api_marcacao_consultas.dto.LoginRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.Authentication;
 
 import java.util.List;
 import java.util.Map;
@@ -90,23 +89,49 @@ public class UsuarioController {
         }
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
         try {
+            // Remove "Bearer " do header
+            String token = authHeader.substring(7);
 
+            // Extrai o email do token
+            String email = jwtTokenProvider.obterEmailDoToken(token);
+
+            // Busca o usuário pelo email
+            Usuario usuario = usuarioService.buscarPorEmail(email);
+
+            return ResponseEntity.ok(usuario);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido");
         }
     }
 
-    // ===== ADIÇÃO PARA CONECTAR FRONT E BACK =====
-    @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuário não autenticado");
+    // ⚠️ ENDPOINT TEMPORÁRIO APENAS PARA TESTES - REMOVER EM PRODUÇÃO
+    @PostMapping("/reset-senhas-teste")
+    public ResponseEntity<?> resetarSenhasParaTeste() {
+        try {
+            String senhasTeste = usuarioService.resetarSenhasParaTeste();
+            return ResponseEntity.ok().body(Map.of("message", senhasTeste));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
-        String email = authentication.getName();
-        return ResponseEntity.ok(Map.of(
-                "id", 0,            // ajuste se quiser buscar no banco
-                "nome", email,      // ajuste para retornar nome real
-                "email", email,
-                "tipo", "PACIENTE"  // ajuste conforme seu modelo (ADMIN/MEDICO/PACIENTE)
-        ));
+    }
+
+    // Endpoint para admin alterar senha de qualquer usuário
+    @PutMapping("/{id}/senha")
+    public ResponseEntity<?> alterarSenhaUsuario(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        try {
+            String novaSenha = request.get("novaSenha");
+            if (novaSenha == null || novaSenha.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Nova senha é obrigatória");
+            }
+
+            Usuario usuario = usuarioService.alterarSenha(id, novaSenha);
+            return ResponseEntity.ok()
+                    .body(Map.of("message", "Senha alterada com sucesso", "usuario", usuario.getNome()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 }

@@ -29,13 +29,7 @@ public class UsuarioService {
     }
 
     public List<Usuario> buscarMedicosPorEspecialidade(String especialidade) {
-        // Esta implementação depende de como você relaciona médicos com especialidades
-        // Se você tiver um relacionamento direto, pode usar:
-        // return usuarioRepository.findByTipoAndEspecialidade("MEDICO", especialidade);
-
-        // Caso contrário, você precisará implementar uma lógica personalizada
-        // Esta é uma implementação simplificada:
-        return usuarioRepository.findByTipo("MEDICO");
+        return usuarioRepository.findByTipoAndEspecialidade("MEDICO", especialidade);
     }
 
     public Usuario salvarUsuario(Usuario usuario) {
@@ -96,9 +90,30 @@ public class UsuarioService {
 
         return usuario;
     }
-    /**
-     * Altera a senha de um usuário específico (apenas admin)
-     */
+
+    public Usuario buscarPorEmail(String email) {
+        return usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    }
+
+    // ⚠️ MÉTODO TEMPORÁRIO APENAS PARA TESTES - REMOVER EM PRODUÇÃO
+    public String resetarSenhasParaTeste() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+        StringBuilder resultado = new StringBuilder("Senhas resetadas para:\n\n");
+
+        for (Usuario usuario : usuarios) {
+            String novaSenha = "123456"; // Senha padrão para todos os usuários em teste
+            usuario.setSenha(passwordEncoder.encode(novaSenha));
+            usuarioRepository.save(usuario);
+
+            resultado.append(String.format("- %s (%s): senha = %s\n",
+                    usuario.getNome(), usuario.getEmail(), novaSenha));
+        }
+
+        return resultado.toString();
+    }
+
+    // Método para admin alterar senha de qualquer usuário
     public Usuario alterarSenha(Long usuarioId, String novaSenha) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
@@ -109,3 +124,4 @@ public class UsuarioService {
 
         return usuarioRepository.save(usuario);
     }
+}
